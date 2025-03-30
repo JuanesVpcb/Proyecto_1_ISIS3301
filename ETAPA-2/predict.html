@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Predicción de Noticias</title>
+  <style>
+    body {
+      background-color: #f3e5f5;
+      font-family: 'Segoe UI', sans-serif;
+      color: #4a148c;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+      margin: 0;
+    }
+    .container {
+      background-color: #fff0ff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(128, 0, 128, 0.2);
+      width: 600px;
+    }
+    h1 {
+      text-align: center;
+      color: #6a1b9a;
+    }
+    .noticia {
+      background-color: #f8eafc;
+      padding: 15px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #8e24aa;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+    button:hover {
+      background-color: #6a1b9a;
+    }
+    .resultado {
+      margin-top: 20px;
+      background-color: #ede7f6;
+      padding: 20px;
+      border-radius: 15px;
+      border-left: 5px solid #7b1fa2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Detector de Noticias Falsas</h1>
+    <form id="predictForm">
+      <div id="noticiasContainer"></div>
+      <button type="button" onclick="agregarNoticia()">+ Agregar noticia</button>
+      <button type="submit">🔍 Predecir</button>
+    </form>
+    <div id="resultado" class="resultado" style="display: none;"></div>
+  </div>
+
+  <script>
+    let contador = 0;
+
+    function agregarNoticia() {
+      contador++;
+      const container = document.getElementById("noticiasContainer");
+
+      const noticia = document.createElement("div");
+      noticia.className = "noticia";
+      noticia.innerHTML = `
+        <label for="titulo${contador}">Título:</label>
+        <input type="text" id="titulo${contador}" name="titulo" required>
+
+        <label for="descripcion${contador}">Descripción:</label>
+        <textarea id="descripcion${contador}" name="descripcion" rows="3" required></textarea>
+      `;
+
+      container.appendChild(noticia);
+    }
+
+    document.getElementById("predictForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const titulos = document.getElementsByName("titulo");
+      const descripciones = document.getElementsByName("descripcion");
+
+      const noticias = [];
+
+      for (let i = 0; i < titulos.length; i++) {
+        if (titulos[i].value && descripciones[i].value) {
+          noticias.push({
+            Titulo: titulos[i].value,
+            Descripcion: descripciones[i].value
+          });
+        }
+      }
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/predict", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(noticias)
+        });
+
+        const data = await response.json();
+        const resultado = document.getElementById("resultado");
+        resultado.innerHTML = "<strong>Resultados de la predicción:</strong><br><br>";
+        resultado.style.display = "block";
+
+        data.forEach((item, index) => {
+          resultado.innerHTML += `<strong>${index + 1}. ${item.Titulo}</strong><br>
+          Predicción: ${item.Predicciones}<br>
+          Confianza - Verdadera: ${(item.Probabilidades.Verdadera * 100).toFixed(2)}%, Falsa: ${(item.Probabilidades.Falsa * 100).toFixed(2)}%<br><br>`;
+        });
+
+      } catch (error) {
+        alert("Error durante la predicción: " + error.message);
+      }
+    });
+
+    // Cargar una noticia por defecto
+    agregarNoticia();
+  </script>
+</body>
+</html>

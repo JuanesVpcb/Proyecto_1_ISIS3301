@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reentrenar Modelo</title>
+  <style>
+    body {
+      background-color: #f3e5f5;
+      font-family: 'Segoe UI', sans-serif;
+      color: #4a148c;
+      display: flex;
+      justify-content: center;
+      align-items: start;
+      padding: 50px;
+    }
+    .container {
+      background-color: #fff0ff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(128, 0, 128, 0.2);
+      text-align: center;
+      width: 400px;
+    }
+    input[type="file"] {
+      padding: 10px;
+      margin: 20px 0;
+      width: 100%;
+    }
+    button {
+      background-color: #8e24aa;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #6a1b9a;
+    }
+    .resultado {
+      margin-top: 20px;
+      background-color: #ede7f6;
+      padding: 20px;
+      border-radius: 15px;
+      border-left: 5px solid #7b1fa2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Reentrenar Modelo</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="file" name="file" id="fileInput" accept=".csv" required />
+      <br />
+      <button type="submit">Subir CSV y Reentrenar</button>
+    </form>
+    <div id="resultado" class="resultado" style="display: none;"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("uploadForm");
+    const resultado = document.getElementById("resultado");
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const fileInput = document.getElementById("fileInput");
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/retrain", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+        resultado.style.display = "block";
+
+        if (data.precision !== undefined) {
+          resultado.innerHTML = `
+            <strong>${data.message}</strong><br><br>
+            Precision: ${(data.precision * 100).toFixed(2)}%<br>
+            Recall: ${(data.recall * 100).toFixed(2)}%<br>
+            F1-score: ${(data.f1_score * 100).toFixed(2)}%
+          `;
+        } else {
+          resultado.innerHTML = "Error: No se recibieron métricas válidas.";
+        }
+      } catch (err) {
+        resultado.style.display = "block";
+        resultado.innerHTML = "Error al enviar el archivo: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
+
